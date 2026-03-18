@@ -114,7 +114,7 @@ export default function JobOfferForm({ onCreated }) {
           minLength={10}
           rows={4}
           className="form-input resize-y"
-          placeholder="Descrivere la posizione, le responsabilita e il contesto aziendale..."
+          placeholder="Descrivere la posizione, le responsabilità e il contesto aziendale..."
           value={form.description}
           onChange={handleChange}
         />

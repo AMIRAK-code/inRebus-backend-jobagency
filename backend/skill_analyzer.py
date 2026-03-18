@@ -183,7 +183,13 @@ def _get_transformer_model() -> SentenceTransformer:
 
 @lru_cache(maxsize=1)
 def _get_tfidf_vectorizer() -> TfidfVectorizer:
-    """Return a TF-IDF vectorizer pre-fitted on the Piedmont taxonomy corpus."""
+    """
+    Return a TF-IDF vectorizer pre-fitted on the Piedmont taxonomy corpus.
+
+    The vectorizer is instantiated and fitted exactly once per process lifetime
+    thanks to ``lru_cache``, satisfying the performance requirement that
+    AI/ML artefacts must not be re-initialised on every request.
+    """
     vectorizer = TfidfVectorizer(
         analyzer="word",
         ngram_range=(1, 2),
@@ -263,8 +269,8 @@ def compute_tfidf_score(cv_text: str, job_text: str) -> float:
         tfidf_matrix = vectorizer.transform([_normalise(cv_text), _normalise(job_text)])
         score = float(cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0])
         return max(0.0, min(1.0, score))
-    except Exception:
-        logger.warning("TF-IDF scoring failed; returning 0.0", exc_info=True)
+    except (ValueError, AttributeError, TypeError) as exc:
+        logger.warning("TF-IDF scoring failed; returning 0.0: %s", exc)
         return 0.0
 
 

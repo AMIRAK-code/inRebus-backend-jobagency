@@ -49,6 +49,11 @@ def test_candidate_create_invalid_short_name():
         CandidateCreate(full_name="A", cv_text="Some longer cv text here for testing.")
 
 
+def test_candidate_create_invalid_long_name():
+    with pytest.raises(ValidationError):
+        CandidateCreate(full_name="A" * 201, cv_text="Some longer cv text here for testing.")
+
+
 def test_candidate_create_invalid_short_cv():
     with pytest.raises(ValidationError):
         CandidateCreate(full_name="Mario Rossi", cv_text="Short")
