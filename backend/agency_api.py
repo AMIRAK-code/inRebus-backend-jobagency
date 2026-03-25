@@ -27,10 +27,12 @@ from sqlalchemy.orm import Session
 from config import settings
 from database import (
     CandidateORM,
+    CandidateShortlistORM,
     JobOfferORM,
     MatchResultORM,
     create_all_tables,
     get_db,
+    SessionLocal,
 )
 from models import (
     CandidateCreate,
@@ -61,7 +63,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     create_all_tables()
 
     # Safely migrate existing tables (without Alembic overhead)
-    with next(get_db()) as db:
+    with SessionLocal() as db:
         try:
             db.execute(text("ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;"))
             db.commit()
@@ -546,10 +548,6 @@ def rank_job_offers_for_candidate(
 
 # ---------------------------------------------------------------------------
 # Shortlist endpoints
-# ---------------------------------------------------------------------------
-
-from database import CandidateShortlistORM
-
 @app.post(
     "/shortlist/{candidate_id}/toggle",
     status_code=status.HTTP_200_OK,

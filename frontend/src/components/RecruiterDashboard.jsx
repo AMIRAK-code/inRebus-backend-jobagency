@@ -144,18 +144,6 @@ function CandidateCard({ ranking, rank }) {
             </div>
           </div>
 
-          {/* Score Breakdown */}
-          {(semantic_score !== undefined && tfidf_score !== undefined) && (
-            <div className="bg-[var(--bg-elevated)] rounded-xl p-4 border border-[var(--border)] space-y-3">
-              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-1.5">
-                <BarChart2 size={11} /> Dettaglio punteggio
-              </p>
-              <MiniBar value={semantic_score} label="Semantico (BERT)" color="bg-[var(--primary)]" />
-              <MiniBar value={tfidf_score} label="Lessicale (TF-IDF)" color="bg-[#a78bfa]" />
-              <p className="text-[10px] text-[var(--text-muted)] pt-1">Formula: 70% semantico + 30% lessicale = {Math.round(score * 100)}%</p>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {matched_skills.length > 0 && (
               <div>
@@ -232,40 +220,6 @@ export default function RecruiterDashboard({ jobOffers, candidatesCount }) {
 
   return (
     <div className="space-y-7">
-      {/* Page header */}
-      <div>
-        <h2 className="heading-font text-3xl font-semibold mb-2">Dashboard Matching</h2>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Seleziona un'offerta per classificare automaticamente i candidati con punteggio NLP.
-        </p>
-      </div>
-
-      {/* KPI Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="card !p-5">
-          <div className="flex items-center gap-3 mb-1">
-            <Users size={18} className="text-[var(--primary)]" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Candidati totali</p>
-          </div>
-          <p className="heading-font text-3xl font-bold text-[var(--text-primary)] tabular-nums">{candidatesCount ?? '—'}</p>
-        </div>
-        <div className="card !p-5">
-          <div className="flex items-center gap-3 mb-1">
-            <Briefcase size={18} className="text-[var(--primary)]" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Offerte attive</p>
-          </div>
-          <p className="heading-font text-3xl font-bold text-[var(--text-primary)] tabular-nums">{activeOffers.length}</p>
-        </div>
-        <div className="card !p-5 col-span-2 sm:col-span-1">
-          <div className="flex items-center gap-3 mb-1">
-            <Brain size={18} className="text-[var(--primary)]" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Motore NLP</p>
-          </div>
-          <p className="heading-font text-base font-semibold text-[#4ade80]">Attivo</p>
-          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">BERT + TF-IDF</p>
-        </div>
-      </div>
-
       {/* Controls */}
       <div className="card !p-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -389,7 +343,7 @@ export default function RecruiterDashboard({ jobOffers, candidatesCount }) {
         <div className="card text-center !p-16 border-dashed opacity-60">
           <Briefcase size={48} className="mx-auto text-[var(--text-muted)] mb-5 opacity-40" />
           <p className="text-[var(--text-secondary)] font-semibold">Seleziona un'offerta di lavoro</p>
-          <p className="text-sm text-[var(--text-muted)] mt-2">Analizza e classifica i candidati per le skill richieste</p>
+          <p className="text-sm text-[var(--text-muted)] mt-2">Classifica i candidati in base all'affinità con i requisiti richiesti.</p>
         </div>
       )}
     </div>
