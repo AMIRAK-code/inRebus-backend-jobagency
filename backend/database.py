@@ -1,8 +1,6 @@
 """
 SQLAlchemy ORM models and database engine configuration.
-
-Uses asyncpg for asynchronous PostgreSQL access.
-Connection parameters are read from environment variables via pydantic-settings.
+Robust Version: Uses SQLite by default for the local demo.
 """
 
 from __future__ import annotations
@@ -11,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
-    ARRAY,
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -20,141 +18,81 @@ from sqlalchemy import (
     Text,
     create_engine,
 )
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from config import settings
-
-
 # ---------------------------------------------------------------------------
-# Synchronous engine (used for Alembic migrations and simple CRUD)
+# Synchronous engine (using SQLite as reliable local fallback)
 # ---------------------------------------------------------------------------
+
+sqlite_url = "sqlite:///./inrebus_demo.db"
 
 engine = create_engine(
-    settings.database_url,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    sqlite_url,
+    connect_args={"check_same_thread": False},
     echo=False,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
 # ---------------------------------------------------------------------------
 # ORM base class
 # ---------------------------------------------------------------------------
 
-
 class Base(DeclarativeBase):
     pass
-
 
 # ---------------------------------------------------------------------------
 # ORM models
 # ---------------------------------------------------------------------------
 
-
 class CandidateORM(Base):
-    """Persistent representation of a job candidate."""
-
     __tablename__ = "candidates"
 
-    id: uuid.UUID = Column(
-        PG_UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True,
-    )
+    id: str = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     full_name: str = Column(String(200), nullable=False)
     cv_text: str = Column(Text, nullable=False)
-    skills: list[str] = Column(ARRAY(String), nullable=False, default=list)
-    created_at: datetime = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
-
+    skills: list[str] = Column(JSON, nullable=False, default=list)
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 class CandidateShortlistORM(Base):
-    """Persistent saved shortlists for candidates."""
-
     __tablename__ = "candidate_shortlists"
 
-    id: uuid.UUID = Column(
-        PG_UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True,
-    )
-    candidate_id: uuid.UUID = Column(PG_UUID(as_uuid=True), nullable=False, index=True, unique=True)
-    created_at: datetime = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
-
+    id: str = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    candidate_id: str = Column(String(36), nullable=False, index=True, unique=True)
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 class JobOfferORM(Base):
-    """Persistent representation of a job offer."""
-
     __tablename__ = "job_offers"
 
-    id: uuid.UUID = Column(
-        PG_UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True,
-    )
+    id: str = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     title: str = Column(String(300), nullable=False)
     company: str = Column(String(200), nullable=False)
     description: str = Column(Text, nullable=False)
-    required_skills: list[str] = Column(ARRAY(String), nullable=False)
-    is_active: bool = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at: datetime = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
-
+    required_skills: list[str] = Column(JSON, nullable=False)
+    is_active: bool = Column(Boolean, nullable=False, default=True)
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 class MatchResultORM(Base):
-    """Cached result of an NLP matching computation."""
-
     __tablename__ = "match_results"
 
-    id: uuid.UUID = Column(
-        PG_UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True,
-    )
-    candidate_id: uuid.UUID = Column(PG_UUID(as_uuid=True), nullable=False, index=True)
-    job_offer_id: uuid.UUID = Column(PG_UUID(as_uuid=True), nullable=False, index=True)
+    id: str = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    candidate_id: str = Column(String(36), nullable=False, index=True)
+    job_offer_id: str = Column(String(36), nullable=False, index=True)
     score: float = Column(Float, nullable=False)
-    matched_skills: list[str] = Column(ARRAY(String), nullable=False, default=list)
-    gap_skills: list[str] = Column(ARRAY(String), nullable=False, default=list)
-    computed_at: datetime = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
-
+    matched_skills: list[str] = Column(JSON, nullable=False, default=list)
+    gap_skills: list[str] = Column(JSON, nullable=False, default=list)
+    computed_at: datetime = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 # ---------------------------------------------------------------------------
-# Dependency injection helper
+# Helpers
 # ---------------------------------------------------------------------------
-
 
 def get_db():
-    """Yield a SQLAlchemy session and ensure it is closed after use."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-
 def create_all_tables() -> None:
-    """Create all database tables if they do not already exist."""
     Base.metadata.create_all(bind=engine)

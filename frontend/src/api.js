@@ -40,6 +40,8 @@ export const candidatesApi = {
   delete: (id) => request(`/candidates/${id}`, { method: 'DELETE' }),
 
   getMatches: (id) => request(`/candidates/${id}/matches`),
+
+  getRankings: (id, topN = 10) => request(`/candidates/${id}/rankings?top_n=${topN}`),
 }
 
 // ---------------------------------------------------------------------------
@@ -82,4 +84,12 @@ export const matchesApi = {
 export const shortlistApi = {
   get: () => request('/shortlist'),
   toggle: (candidateId) => request(`/shortlist/${candidateId}/toggle`, { method: 'POST' }),
+}
+
+// ---------------------------------------------------------------------------
+// Demo
+// ---------------------------------------------------------------------------
+
+export const demoApi = {
+  seed: () => request('/demo/seed', { method: 'POST' }),
 }

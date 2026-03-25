@@ -62,17 +62,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Ensure database tables exist (idempotent)
     create_all_tables()
 
-    # Safely migrate existing tables (without Alembic overhead)
-    with SessionLocal() as db:
-        try:
-            db.execute(text("ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;"))
-            db.commit()
-            logger.info("Migrated job_offers table: added is_active.")
-        except Exception:
-            db.rollback()
-            logger.warning("Migration failed (could be sqlite or already exists).")
-
-    # Pre-warm the NLP model to avoid cold-start latency on first request
+    # Pre-warm the NLP models (will fallback to lexical if missing)
     try:
         from skill_analyzer import _get_transformer_model, _get_tfidf_vectorizer
 
@@ -501,7 +491,7 @@ def get_candidate_matches(
 
 @app.get(
     "/candidates/{candidate_id}/rankings",
-    response_model=JobRankingResponse,
+    response_model=CandidateRankingResponse,
     tags=["Matching"],
     summary="Rank all active job offers for a candidate",
 )
@@ -509,7 +499,7 @@ def rank_job_offers_for_candidate(
     candidate_id: uuid.UUID,
     top_n: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
-) -> JobRankingResponse:
+) -> CandidateRankingResponse:
     """Reverse matching: find the best active job offers for a given candidate."""
     candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
     if candidate is None:
@@ -585,3 +575,114 @@ def get_shortlist(db: Session = Depends(get_db)) -> list[uuid.UUID]:
     rows = db.query(CandidateShortlistORM.candidate_id).all()
     return [row[0] for row in rows]
 
+
+# ---------------------------------------------------------------------------
+# Demo seed endpoint - populates realistic sample data for demonstrations
+# ---------------------------------------------------------------------------
+
+_DEMO_CANDIDATES = [
+    {
+        "full_name": "Marco Bianchi",
+        "cv_text": "Sviluppatore software con 6 anni di esperienza in Python e sviluppo backend. Ho lavorato con FastAPI, Django, PostgreSQL e Docker. Esperto in machine learning e analisi dei dati con scikit-learn e pandas. Ho conseguito la laurea in Informatica presso il Politecnico di Torino.",
+        "skills": ["python", "fastapi", "postgresql", "docker", "machine learning", "sql", "git"],
+    },
+    {
+        "full_name": "Giulia Ferretti",
+        "cv_text": "Operatrice CNC con 8 anni di esperienza in ambiente manifatturiero. Specializzata in tornitura e fresatura CNC su macchine Fanuc e Siemens. Certificata per il controllo qualità e metrologia. Esperienza nel settore automotive e aeronautico.",
+        "skills": ["tornitura cnc", "fresatura cnc", "fanuc", "siemens", "metrologia", "controllo qualita"],
+    },
+    {
+        "full_name": "Andrea Conti",
+        "cv_text": "Tecnico di automazione industriale con competenze in programmazione PLC Siemens S7 e Allen Bradley. Esperienza con sistemi SCADA, HMI e robotica collaborativa. Ho partecipato a progetti di Industria 4.0 in stabilimenti produttivi del nord Italia.",
+        "skills": ["programmazione plc", "siemens", "scada", "hmi", "robotica industriale", "industria 4.0"],
+    },
+    {
+        "full_name": "Valentina Russo",
+        "cv_text": "Responsabile logistica con 5 anni di esperienza nella gestione magazzino e supply chain. Utilizzo sistemi WMS e SAP per la gestione delle scorte. Formata in metodologie Lean Manufacturing e Kanban. Ottima capacità di problem solving e leadership.",
+        "skills": ["gestione magazzino", "wms", "sap", "lean manufacturing", "kanban", "supply chain", "leadership"],
+    },
+    {
+        "full_name": "Luca Marino",
+        "cv_text": "Sviluppatore full-stack con 4 anni di esperienza in React, TypeScript e Node.js. Familiarità con Docker, Kubernetes e pipeline CI/CD con GitHub Actions. Ho lavorato su piattaforme SaaS B2B nel settore HR e fintech.",
+        "skills": ["javascript", "typescript", "react", "docker", "kubernetes", "git", "sql"],
+    },
+]
+
+_DEMO_OFFERS = [
+    {
+        "title": "Sviluppatore Backend Python",
+        "company": "TechNord S.r.l.",
+        "description": "Cerchiamo uno sviluppatore Python esperto per potenziare il nostro team backend. Il candidato lavorerà con FastAPI, PostgreSQL e sistemi cloud. Gradita esperienza con machine learning e analisi dati.",
+        "required_skills": ["python", "fastapi", "postgresql", "docker", "sql"],
+        "is_active": True,
+    },
+    {
+        "title": "Operatore CNC Senior",
+        "company": "Metalmeccanica Rossi S.p.A.",
+        "description": "Ricerchiamo operatore CNC con esperienza su torni e frese Fanuc. Il candidato dovrà gestire il controllo qualità dei pezzi lavorati e collaborare con l'ufficio tecnico per ottimizzare i cicli di lavorazione.",
+        "required_skills": ["tornitura cnc", "fresatura cnc", "fanuc", "metrologia", "controllo qualita"],
+        "is_active": True,
+    },
+    {
+        "title": "Tecnico Automazione PLC",
+        "company": "Automazioni Piemonte S.r.l.",
+        "description": "Selezioniamo tecnico specializzato in programmazione PLC Siemens per progetti di automazione industriale. Richiesta esperienza con SCADA e HMI. Conoscenza di Industria 4.0 è un plus.",
+        "required_skills": ["programmazione plc", "siemens", "scada", "hmi", "industria 4.0"],
+        "is_active": True,
+    },
+]
+
+
+@app.post(
+    "/demo/seed",
+    status_code=status.HTTP_201_CREATED,
+    tags=["Demo"],
+    summary="Seed the database with realistic Italian demo data",
+)
+def seed_demo_data(db: Session = Depends(get_db)) -> dict[str, int]:
+    """Populate the database with realistic demo candidates and job offers.
+    
+    Safe to call multiple times — skips entries that already exist by name.
+    """
+    from skill_analyzer import _ALL_TAXONOMY_TERMS, _normalise  # noqa: PLC0415
+    
+    candidates_created = 0
+    for demo in _DEMO_CANDIDATES:
+        existing = db.query(CandidateORM).filter(CandidateORM.full_name == demo["full_name"]).first()
+        if existing:
+            continue
+        
+        base_skills: list[str] = list(demo["skills"])
+        norm_cv = _normalise(demo["cv_text"])
+        # Auto-extract extra taxonomy terms found in the CV text
+        extra = [t for t in _ALL_TAXONOMY_TERMS if _normalise(t) in norm_cv and t not in base_skills]
+        all_skills = list(dict.fromkeys(base_skills + extra))
+        
+        db.add(CandidateORM(
+            id=uuid.uuid4(),
+            full_name=demo["full_name"],
+            cv_text=demo["cv_text"],
+            skills=all_skills,
+            created_at=datetime.now(timezone.utc),
+        ))
+        candidates_created += 1
+
+    offers_created = 0
+    for demo in _DEMO_OFFERS:
+        existing = db.query(JobOfferORM).filter(JobOfferORM.title == demo["title"]).first()
+        if existing:
+            continue
+        db.add(JobOfferORM(
+            id=uuid.uuid4(),
+            title=demo["title"],
+            company=demo["company"],
+            description=demo["description"],
+            required_skills=list(demo["required_skills"]),
+            is_active=bool(demo["is_active"]),
+            created_at=datetime.now(timezone.utc),
+        ))
+        offers_created += 1
+
+    db.commit()
+    logger.info("Demo seed: %d candidates, %d offers created.", candidates_created, offers_created)
+    return {"candidates_created": candidates_created, "offers_created": offers_created}
