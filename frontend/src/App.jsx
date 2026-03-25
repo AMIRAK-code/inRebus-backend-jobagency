@@ -223,11 +223,11 @@ export default function App() {
       <aside className="sidebar">
         <div className="p-5 border-b border-[var(--border)]">
           <div className="flex items-center gap-0 cursor-pointer select-none">
-            <div className="w-9 h-9 bg-[#f16421] rounded flex items-center justify-center text-[13px] font-bold text-white shrink-0 tracking-tighter">
+            <div className="w-9 h-9 bg-[var(--primary)] shadow-md rounded flex items-center justify-center text-[13px] font-bold text-white shrink-0 tracking-tighter">
               in
             </div>
             <div className="font-sans text-lg text-[var(--text-primary)] tracking-tight pl-1.5 flex items-center gap-1.5">
-              Rebus <span className="text-[9px] font-bold text-[var(--primary)] uppercase tracking-widest border border-[#f9731680] rounded-[3px] px-1 py-0.5 leading-snug">Agency</span>
+              Rebus <span className="text-[9px] font-bold text-[var(--primary)] uppercase tracking-widest border border-[var(--primary-glow)] rounded-[3px] px-1 py-0.5 leading-snug">Agency</span>
             </div>
           </div>
         </div>

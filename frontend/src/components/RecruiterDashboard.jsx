@@ -76,7 +76,7 @@ function CandidateCard({ ranking, rank }) {
       : 0
 
   return (
-    <div className="card !p-5 mb-3 transition-shadow hover:shadow-[0_4px_20px_rgba(249,115,22,0.1)] hover:border-[var(--primary-glow)]">
+    <div className="card !p-5 mb-3 transition-shadow hover:shadow-[0_4px_20px_var(--primary-subtle)] hover:border-[var(--primary-glow)]">
       {/* Header row */}
       <div className="flex flex-col sm:flex-row items-start gap-4">
         {/* Rank badge */}
