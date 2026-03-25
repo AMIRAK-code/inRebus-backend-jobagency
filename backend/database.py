@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     ARRAY,
+    Boolean,
     Column,
     DateTime,
     Float,
@@ -75,6 +76,25 @@ class CandidateORM(Base):
     )
 
 
+class CandidateShortlistORM(Base):
+    """Persistent saved shortlists for candidates."""
+
+    __tablename__ = "candidate_shortlists"
+
+    id: uuid.UUID = Column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        index=True,
+    )
+    candidate_id: uuid.UUID = Column(PG_UUID(as_uuid=True), nullable=False, index=True, unique=True)
+    created_at: datetime = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class JobOfferORM(Base):
     """Persistent representation of a job offer."""
 
@@ -90,6 +110,7 @@ class JobOfferORM(Base):
     company: str = Column(String(200), nullable=False)
     description: str = Column(Text, nullable=False)
     required_skills: list[str] = Column(ARRAY(String), nullable=False)
+    is_active: bool = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,

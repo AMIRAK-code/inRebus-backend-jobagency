@@ -355,6 +355,8 @@ def compute_match(
 
     return {
         "score": round(composite, 4),
+        "semantic_score": round(float(semantic_score), 4),
+        "tfidf_score": round(float(tfidf_score), 4),
         "matched_skills": matched_skills,
         "gap_skills": gap_skills,
     }

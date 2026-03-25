@@ -21,6 +21,7 @@ from typing import Any, AsyncGenerator
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -40,6 +41,8 @@ from models import (
     MatchRequest,
     MatchResult,
     RankedCandidate,
+    RankedJobOffer,
+    CandidateRankingResponse,
 )
 from skill_analyzer import compute_match
 
@@ -56,6 +59,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("inRebus Agency API starting up.")
     # Ensure database tables exist (idempotent)
     create_all_tables()
+
+    # Safely migrate existing tables (without Alembic overhead)
+    with next(get_db()) as db:
+        try:
+            db.execute(text("ALTER TABLE job_offers ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;"))
+            db.commit()
+            logger.info("Migrated job_offers table: added is_active.")
+        except Exception:
+            db.rollback()
+            logger.warning("Migration failed (could be sqlite or already exists).")
+
     # Pre-warm the NLP model to avoid cold-start latency on first request
     try:
         from skill_analyzer import _get_transformer_model, _get_tfidf_vectorizer
@@ -136,12 +150,22 @@ def create_candidate(
     payload: CandidateCreate,
     db: Session = Depends(get_db),
 ) -> CandidateRead:
-    """Register a new job candidate with CV text and declared skills."""
+    """Register a new job candidate with CV text and declared/auto-extracted skills."""
+    skills = payload.skills
+    
+    # Auto-extract skills if none provided using the local Piedmont Taxonomy
+    if not skills:
+        from skill_analyzer import _ALL_TAXONOMY_TERMS, _normalise
+        norm_cv = _normalise(payload.cv_text)
+        skills = [term for term in _ALL_TAXONOMY_TERMS if _normalise(term) in norm_cv]
+        # Remove duplicates while preserving order
+        skills = list(dict.fromkeys(skills))
+
     candidate = CandidateORM(
         id=uuid.uuid4(),
         full_name=payload.full_name,
         cv_text=payload.cv_text,
-        skills=payload.skills,
+        skills=skills,
         created_at=datetime.now(timezone.utc),
     )
     db.add(candidate)
@@ -410,6 +434,8 @@ def rank_candidates_for_job(
                 score=result["score"],
                 matched_skills=result["matched_skills"],
                 gap_skills=result["gap_skills"],
+                semantic_score=result.get("semantic_score", 0.0),
+                tfidf_score=result.get("tfidf_score", 0.0),
             )
         )
 
@@ -419,6 +445,29 @@ def rank_candidates_for_job(
         job_offer=_orm_to_job_offer(offer),
         rankings=ranked[:top_n],
     )
+
+
+@app.patch(
+    "/job-offers/{job_offer_id}/toggle-active",
+    response_model=JobOfferRead,
+    tags=["Job Offers"],
+    summary="Toggle the active state of a job offer",
+)
+def toggle_job_offer_active(
+    job_offer_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> JobOfferRead:
+    """Toggle the is_active flag on a job offer (active ↔ archived)."""
+    offer = db.query(JobOfferORM).filter(JobOfferORM.id == job_offer_id).first()
+    if offer is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job offer {job_offer_id} not found.",
+        )
+    offer.is_active = not offer.is_active
+    db.commit()
+    db.refresh(offer)
+    return _orm_to_job_offer(offer)
 
 
 @app.get(
@@ -446,3 +495,95 @@ def get_candidate_matches(
         .all()
     )
     return [_orm_to_match_result(m) for m in matches]
+
+
+@app.get(
+    "/candidates/{candidate_id}/rankings",
+    response_model=JobRankingResponse,
+    tags=["Matching"],
+    summary="Rank all active job offers for a candidate",
+)
+def rank_job_offers_for_candidate(
+    candidate_id: uuid.UUID,
+    top_n: int = Query(default=10, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> JobRankingResponse:
+    """Reverse matching: find the best active job offers for a given candidate."""
+    candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
+    if candidate is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Candidate {candidate_id} not found.",
+        )
+
+    offers = db.query(JobOfferORM).filter(JobOfferORM.is_active == True).all()
+
+    ranked: list[RankedJobOffer] = []
+    for offer in offers:
+        result = compute_match(
+            cv_text=candidate.cv_text,
+            job_description=offer.description,
+            required_skills=offer.required_skills,
+        )
+        ranked.append(
+            RankedJobOffer(
+                job_offer=_orm_to_job_offer(offer),
+                score=result["score"],
+                matched_skills=result["matched_skills"],
+                gap_skills=result["gap_skills"],
+                semantic_score=result.get("semantic_score", 0.0),
+                tfidf_score=result.get("tfidf_score", 0.0),
+            )
+        )
+
+    ranked.sort(key=lambda r: r.score, reverse=True)
+
+    return CandidateRankingResponse(
+        candidate=_orm_to_candidate(candidate),
+        rankings=ranked[:top_n],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Shortlist endpoints
+# ---------------------------------------------------------------------------
+
+from database import CandidateShortlistORM
+
+@app.post(
+    "/shortlist/{candidate_id}/toggle",
+    status_code=status.HTTP_200_OK,
+    tags=["Shortlist"],
+    summary="Toggle a candidate in the recruiter's shortlist",
+)
+def toggle_candidate_shortlist(
+    candidate_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> dict[str, bool]:
+    """Add or remove a candidate from the persistent shortlist."""
+    candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+        
+    existing = db.query(CandidateShortlistORM).filter(CandidateShortlistORM.candidate_id == candidate_id).first()
+    if existing:
+        db.delete(existing)
+        db.commit()
+        return {"saved": False}
+    else:
+        new_shortlist = CandidateShortlistORM(id=uuid.uuid4(), candidate_id=candidate_id)
+        db.add(new_shortlist)
+        db.commit()
+        return {"saved": True}
+
+
+@app.get(
+    "/shortlist",
+    response_model=list[uuid.UUID],
+    tags=["Shortlist"],
+    summary="Get all shortlisted candidate IDs",
+)
+def get_shortlist(db: Session = Depends(get_db)) -> list[uuid.UUID]:
+    rows = db.query(CandidateShortlistORM.candidate_id).all()
+    return [row[0] for row in rows]
+

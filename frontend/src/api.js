@@ -57,6 +57,8 @@ export const jobOffersApi = {
 
   delete: (id) => request(`/job-offers/${id}`, { method: 'DELETE' }),
 
+  toggleActive: (id) => request(`/job-offers/${id}/toggle-active`, { method: 'PATCH' }),
+
   getRankings: (id, topN = 10) =>
     request(`/job-offers/${id}/rankings?top_n=${topN}`),
 }
@@ -71,4 +73,13 @@ export const matchesApi = {
       method: 'POST',
       body: JSON.stringify({ candidate_id: candidateId, job_offer_id: jobOfferId }),
     }),
+}
+
+// ---------------------------------------------------------------------------
+// Shortlists
+// ---------------------------------------------------------------------------
+
+export const shortlistApi = {
+  get: () => request('/shortlist'),
+  toggle: (candidateId) => request(`/shortlist/${candidateId}/toggle`, { method: 'POST' }),
 }

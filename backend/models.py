@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -65,6 +65,14 @@ class JobOfferCreate(BaseModel):
         min_length=1,
         description="List of required skills according to the Piedmont Taxonomy.",
     )
+    is_active: Optional[bool] = Field(default=True, description="Whether the offer is currently active.")
+
+    @model_validator(mode='after')
+    def coerce_is_active(self) -> 'JobOfferCreate':
+        """Ensure is_active is never None (backward compat with pre-migration rows)."""
+        if self.is_active is None:
+            self.is_active = True
+        return self
 
 
 class JobOfferRead(JobOfferCreate):
@@ -114,6 +122,8 @@ class RankedCandidate(BaseModel):
     score: float = Field(..., ge=0.0, le=1.0)
     matched_skills: list[str]
     gap_skills: list[str]
+    semantic_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Raw semantic similarity score.")
+    tfidf_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Raw TF-IDF similarity score.")
 
 
 class JobRankingResponse(BaseModel):
@@ -121,3 +131,21 @@ class JobRankingResponse(BaseModel):
 
     job_offer: JobOfferRead
     rankings: list[RankedCandidate]
+
+
+class RankedJobOffer(BaseModel):
+    """A job offer ranked by match score for a given candidate."""
+
+    job_offer: JobOfferRead
+    score: float = Field(..., ge=0.0, le=1.0)
+    matched_skills: list[str]
+    gap_skills: list[str]
+    semantic_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    tfidf_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class CandidateRankingResponse(BaseModel):
+    """Ranked list of job offers for a specific candidate."""
+
+    candidate: CandidateRead
+    rankings: list[RankedJobOffer]
