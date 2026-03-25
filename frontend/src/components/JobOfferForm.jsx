@@ -1,8 +1,5 @@
 /**
  * JobOfferForm component.
- *
- * Renders a form to publish a new job offer with title, company,
- * description, and comma-separated required skills.
  */
 
 import { useState } from 'react'
@@ -55,20 +52,20 @@ export default function JobOfferForm({ onCreated }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card p-4 sm:p-5 space-y-4">
-      <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-        <Briefcase size={18} className="text-brand-600" />
+    <form onSubmit={handleSubmit} className="card !p-5 space-y-5">
+      <h3 className="heading-font text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+        <Briefcase size={18} className="text-[var(--primary)]" />
         Pubblica offerta di lavoro
       </h3>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          <X size={14} className="flex-shrink-0 mt-0.5 text-red-500" />
+        <div className="flex items-start gap-2 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
+          <X size={16} className="shrink-0 mt-0.5" />
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <label htmlFor="title" className="form-label">
             Titolo posizione
@@ -113,7 +110,7 @@ export default function JobOfferForm({ onCreated }) {
           required
           minLength={10}
           rows={4}
-          className="form-input resize-y"
+          className="form-input resize-y py-3"
           placeholder="Descrivere la posizione, le responsabilità e il contesto aziendale..."
           value={form.description}
           onChange={handleChange}
@@ -123,7 +120,7 @@ export default function JobOfferForm({ onCreated }) {
       <div>
         <label htmlFor="required_skills" className="form-label">
           Competenze richieste{' '}
-          <span className="font-normal text-gray-400">(separate da virgola)</span>
+          <span className="font-normal text-[var(--text-muted)] lowercase tracking-normal">(separate da virgola)</span>
         </label>
         <input
           id="required_skills"
@@ -137,10 +134,10 @@ export default function JobOfferForm({ onCreated }) {
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-2">
         <button type="submit" disabled={loading} className="btn-primary">
           <Briefcase size={15} />
-          {loading ? 'Pubblicazione...' : 'Pubblica offerta'}
+          {loading ? 'Pubblicazione...' : 'Pubblica'}
         </button>
       </div>
     </form>

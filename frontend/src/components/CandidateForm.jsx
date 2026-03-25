@@ -1,8 +1,5 @@
 /**
  * CandidateForm component.
- *
- * Renders a form to register a new candidate with name, CV text,
- * and a comma-separated list of explicit skills.
  */
 
 import { useState } from 'react'
@@ -42,15 +39,15 @@ export default function CandidateForm({ onCreated }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card p-4 sm:p-5 space-y-4">
-      <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-        <UserPlus size={18} className="text-brand-600" />
+    <form onSubmit={handleSubmit} className="card !p-5 space-y-5">
+      <h3 className="heading-font text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+        <UserPlus size={18} className="text-[var(--primary)]" />
         Registra candidato
       </h3>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          <X size={14} className="flex-shrink-0 mt-0.5 text-red-500" />
+        <div className="flex items-start gap-2 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
+          <X size={16} className="shrink-0 mt-0.5" />
           {error}
         </div>
       )}
@@ -82,7 +79,7 @@ export default function CandidateForm({ onCreated }) {
           required
           minLength={10}
           rows={5}
-          className="form-input resize-y"
+          className="form-input resize-y py-3"
           placeholder="Incollare qui il testo completo del CV del candidato..."
           value={form.cv_text}
           onChange={handleChange}
@@ -92,7 +89,7 @@ export default function CandidateForm({ onCreated }) {
       <div>
         <label htmlFor="skills" className="form-label">
           Competenze dichiarate{' '}
-          <span className="font-normal text-gray-400">(separate da virgola)</span>
+          <span className="font-normal text-[var(--text-muted)] lowercase tracking-normal">(separate da virgola)</span>
         </label>
         <input
           id="skills"
@@ -105,10 +102,10 @@ export default function CandidateForm({ onCreated }) {
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-2">
         <button type="submit" disabled={loading} className="btn-primary">
           <UserPlus size={15} />
-          {loading ? 'Registrazione...' : 'Registra candidato'}
+          {loading ? 'Registrazione...' : 'Registra'}
         </button>
       </div>
     </form>
