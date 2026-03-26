@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator
 
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -154,7 +154,7 @@ def create_candidate(
         skills = list(dict.fromkeys(skills))
 
     candidate = CandidateORM(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         full_name=payload.full_name,
         cv_text=payload.cv_text,
         skills=skills,
@@ -193,7 +193,7 @@ def get_candidate(
     db: Session = Depends(get_db),
 ) -> CandidateRead:
     """Return the details of a specific candidate."""
-    candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
+    candidate = db.query(CandidateORM).filter(CandidateORM.id == str(candidate_id)).first()
     if candidate is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -204,7 +204,7 @@ def get_candidate(
 
 @app.delete(
     "/candidates/{candidate_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None,
     tags=["Candidates"],
     summary="Delete a candidate",
 )
@@ -213,7 +213,7 @@ def delete_candidate(
     db: Session = Depends(get_db),
 ) -> None:
     """Permanently remove a candidate record from the database."""
-    candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
+    candidate = db.query(CandidateORM).filter(CandidateORM.id == str(candidate_id)).first()
     if candidate is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -241,7 +241,7 @@ def create_job_offer(
 ) -> JobOfferRead:
     """Publish a new job offer with required skills from the Piedmont Taxonomy."""
     offer = JobOfferORM(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         title=payload.title,
         company=payload.company,
         description=payload.description,
@@ -281,7 +281,7 @@ def get_job_offer(
     db: Session = Depends(get_db),
 ) -> JobOfferRead:
     """Return the details of a specific job offer."""
-    offer = db.query(JobOfferORM).filter(JobOfferORM.id == job_offer_id).first()
+    offer = db.query(JobOfferORM).filter(JobOfferORM.id == str(job_offer_id)).first()
     if offer is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -292,7 +292,7 @@ def get_job_offer(
 
 @app.delete(
     "/job-offers/{job_offer_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_204_NO_CONTENT, response_class=Response, response_model=None,
     tags=["Job Offers"],
     summary="Delete a job offer",
 )
@@ -301,7 +301,7 @@ def delete_job_offer(
     db: Session = Depends(get_db),
 ) -> None:
     """Permanently remove a job offer from the database."""
-    offer = db.query(JobOfferORM).filter(JobOfferORM.id == job_offer_id).first()
+    offer = db.query(JobOfferORM).filter(JobOfferORM.id == str(job_offer_id)).first()
     if offer is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -335,7 +335,7 @@ def compute_candidate_job_match(
     """
     candidate = (
         db.query(CandidateORM)
-        .filter(CandidateORM.id == payload.candidate_id)
+        .filter(CandidateORM.id == str(payload.candidate_id))
         .first()
     )
     if candidate is None:
@@ -345,7 +345,7 @@ def compute_candidate_job_match(
         )
 
     offer = (
-        db.query(JobOfferORM).filter(JobOfferORM.id == payload.job_offer_id).first()
+        db.query(JobOfferORM).filter(JobOfferORM.id == str(payload.job_offer_id)).first()
     )
     if offer is None:
         raise HTTPException(
@@ -363,8 +363,8 @@ def compute_candidate_job_match(
     existing = (
         db.query(MatchResultORM)
         .filter(
-            MatchResultORM.candidate_id == payload.candidate_id,
-            MatchResultORM.job_offer_id == payload.job_offer_id,
+            MatchResultORM.candidate_id == str(payload.candidate_id),
+            MatchResultORM.job_offer_id == str(payload.job_offer_id),
         )
         .first()
     )
@@ -373,9 +373,9 @@ def compute_candidate_job_match(
         db.flush()
 
     match_orm = MatchResultORM(
-        id=uuid.uuid4(),
-        candidate_id=payload.candidate_id,
-        job_offer_id=payload.job_offer_id,
+        id=str(uuid.uuid4()),
+        candidate_id=str(payload.candidate_id),
+        job_offer_id=str(payload.job_offer_id),
         score=result["score"],
         matched_skills=result["matched_skills"],
         gap_skills=result["gap_skills"],
@@ -404,7 +404,7 @@ def rank_candidates_for_job(
     Matches are computed on-the-fly for each candidate and the top N results
     are returned sorted by descending match score.
     """
-    offer = db.query(JobOfferORM).filter(JobOfferORM.id == job_offer_id).first()
+    offer = db.query(JobOfferORM).filter(JobOfferORM.id == str(job_offer_id)).first()
     if offer is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -450,7 +450,7 @@ def toggle_job_offer_active(
     db: Session = Depends(get_db),
 ) -> JobOfferRead:
     """Toggle the is_active flag on a job offer (active ↔ archived)."""
-    offer = db.query(JobOfferORM).filter(JobOfferORM.id == job_offer_id).first()
+    offer = db.query(JobOfferORM).filter(JobOfferORM.id == str(job_offer_id)).first()
     if offer is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -473,7 +473,7 @@ def get_candidate_matches(
     db: Session = Depends(get_db),
 ) -> list[MatchResult]:
     """Return all previously computed and stored match results for a candidate."""
-    candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
+    candidate = db.query(CandidateORM).filter(CandidateORM.id == str(candidate_id)).first()
     if candidate is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -482,7 +482,7 @@ def get_candidate_matches(
 
     matches = (
         db.query(MatchResultORM)
-        .filter(MatchResultORM.candidate_id == candidate_id)
+        .filter(MatchResultORM.candidate_id == str(candidate_id))
         .order_by(MatchResultORM.score.desc())
         .all()
     )
@@ -501,7 +501,7 @@ def rank_job_offers_for_candidate(
     db: Session = Depends(get_db),
 ) -> CandidateRankingResponse:
     """Reverse matching: find the best active job offers for a given candidate."""
-    candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
+    candidate = db.query(CandidateORM).filter(CandidateORM.id == str(candidate_id)).first()
     if candidate is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -549,17 +549,17 @@ def toggle_candidate_shortlist(
     db: Session = Depends(get_db),
 ) -> dict[str, bool]:
     """Add or remove a candidate from the persistent shortlist."""
-    candidate = db.query(CandidateORM).filter(CandidateORM.id == candidate_id).first()
+    candidate = db.query(CandidateORM).filter(CandidateORM.id == str(candidate_id)).first()
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
         
-    existing = db.query(CandidateShortlistORM).filter(CandidateShortlistORM.candidate_id == candidate_id).first()
+    existing = db.query(CandidateShortlistORM).filter(CandidateShortlistORM.candidate_id == str(candidate_id)).first()
     if existing:
         db.delete(existing)
         db.commit()
         return {"saved": False}
     else:
-        new_shortlist = CandidateShortlistORM(id=uuid.uuid4(), candidate_id=candidate_id)
+        new_shortlist = CandidateShortlistORM(id=str(uuid.uuid4()), candidate_id=str(candidate_id))
         db.add(new_shortlist)
         db.commit()
         return {"saved": True}
@@ -659,7 +659,7 @@ def seed_demo_data(db: Session = Depends(get_db)) -> dict[str, int]:
         all_skills = list(dict.fromkeys(base_skills + extra))
         
         db.add(CandidateORM(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             full_name=demo["full_name"],
             cv_text=demo["cv_text"],
             skills=all_skills,
@@ -673,7 +673,7 @@ def seed_demo_data(db: Session = Depends(get_db)) -> dict[str, int]:
         if existing:
             continue
         db.add(JobOfferORM(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             title=demo["title"],
             company=demo["company"],
             description=demo["description"],
