@@ -1,0 +1,126 @@
+<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    
+    <!-- BOUNDARIES / LAYERS -->
+    <mxCell id="Layer_Frontend" value="Client Layer (Frontend)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontStyle=1;startSize=30;" parent="1" vertex="1">
+      <mxGeometry x="40" y="80" width="320" height="600" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="Layer_Backend" value="Application Layer (Backend)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#dae8fc;fontColor=#000000;strokeColor=#6c8ebf;fontStyle=1;startSize=30;" parent="1" vertex="1">
+      <mxGeometry x="420" y="80" width="340" height="600" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="Layer_Data_AI" value="Data &amp; AI Engine Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;fontColor=#000000;strokeColor=#82b366;fontStyle=1;startSize=30;" parent="1" vertex="1">
+      <mxGeometry x="820" y="80" width="300" height="600" as="geometry" />
+    </mxCell>
+
+    <!-- FRONTEND COMPONENTS -->
+    <mxCell id="UI_React" value="React / Vite SPA&#xa;(Recruiter Dashboard)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontStyle=1;fontColor=#000000;" parent="Layer_Frontend" vertex="1">
+      <mxGeometry x="40" y="90" width="240" height="60" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="UI_PDF" value="PDF.js&#xa;(Client-side CV Parsing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontColor=#000000;" parent="Layer_Frontend" vertex="1">
+      <mxGeometry x="40" y="210" width="240" height="50" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="UI_State" value="State Management&#xa;(Shortlist, Candidates, Offers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontColor=#000000;" parent="Layer_Frontend" vertex="1">
+      <mxGeometry x="40" y="320" width="240" height="50" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="UI_APIClient" value="Rest API Client (Fetch)&#xa;JSON Integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontColor=#000000;" parent="Layer_Frontend" vertex="1">
+      <mxGeometry x="40" y="470" width="240" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- BACKEND COMPONENTS -->
+    <mxCell id="BE_FastAPI" value="FastAPI Core&#xa;(REST Endpoints &amp; Routing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0066cc;fontStyle=1;fontColor=#000000;" parent="Layer_Backend" vertex="1">
+      <mxGeometry x="50" y="90" width="240" height="60" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="BE_Pydantic" value="Pydantic Models&#xa;(Data Validation &amp; Schemas)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontColor=#000000;" parent="Layer_Backend" vertex="1">
+      <mxGeometry x="50" y="210" width="240" height="50" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="BE_SkillAnalyzer" value="Matching Controller&#xa;(agency_api.py + skill_analyzer.py)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontColor=#000000;" parent="Layer_Backend" vertex="1">
+      <mxGeometry x="50" y="320" width="240" height="50" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="BE_SQLAlchemy" value="SQLAlchemy ORM&#xa;(Session Management)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontColor=#000000;" parent="Layer_Backend" vertex="1">
+      <mxGeometry x="50" y="470" width="240" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- DATA & AI COMPONENTS -->
+    <mxCell id="DB_Main" value="Relational Database&#xa;(PostgreSQL / SQLite)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffffff;strokeColor=#666666;fontStyle=1;fontColor=#000000;" parent="Layer_Data_AI" vertex="1">
+      <mxGeometry x="50" y="440" width="200" height="80" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="AI_Taxonomy" value="Piedmont Skills Taxonomy&#xa;(Reference Data)" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#ffffff;strokeColor=#666666;fontColor=#000000;" parent="Layer_Data_AI" vertex="1">
+      <mxGeometry x="50" y="60" width="200" height="60" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="AI_BERT" value="Semantic Engine&#xa;(multilingual-MiniLM-L12-v2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontColor=#000000;" parent="Layer_Data_AI" vertex="1">
+      <mxGeometry x="50" y="180" width="200" height="60" as="geometry" />
+    </mxCell>
+    
+    <mxCell id="AI_TFIDF" value="Lexical Engine &amp; Gap Analysis&#xa;(Scikit-Learn TF-IDF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontColor=#000000;" parent="Layer_Data_AI" vertex="1">
+      <mxGeometry x="50" y="280" width="200" height="60" as="geometry" />
+    </mxCell>
+
+    <!-- EDGES FRONTEND -->
+    <mxCell id="Edge_React_PDF" edge="1" parent="Layer_Frontend" source="UI_React" target="UI_PDF">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="Edge_React_State" edge="1" parent="Layer_Frontend" source="UI_React" target="UI_State">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="Edge_State_API" edge="1" parent="Layer_Frontend" source="UI_State" target="UI_APIClient">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- EDGES BACKEND -->
+    <mxCell id="Edge_FastAPI_Pydantic" edge="1" parent="Layer_Backend" source="BE_FastAPI" target="BE_Pydantic">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="Edge_Pydantic_Controller" edge="1" parent="Layer_Backend" source="BE_Pydantic" target="BE_SkillAnalyzer">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="Edge_Controller_ORM" edge="1" parent="Layer_Backend" source="BE_SkillAnalyzer" target="BE_SQLAlchemy">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- EDGES CROSS-LAYER -->
+    <mxCell id="Edge_HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="UI_APIClient" target="BE_FastAPI">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="390" y="575" />
+          <mxPoint x="390" y="200" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="Label_HTTP" value="HTTP REST (JSON)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#000000;" vertex="1" connectable="0" parent="Edge_HTTP">
+      <mxGeometry x="0.1" y="-2" relative="1" as="geometry">
+        <mxPoint x="-11" y="-37" as="offset" />
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="Edge_ORM_DB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="BE_SQLAlchemy" target="DB_Main">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="Edge_Controller_BERT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="BE_SkillAnalyzer" target="AI_BERT">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="Edge_Controller_TFIDF" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="BE_SkillAnalyzer" target="AI_TFIDF">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="Edge_Controller_Taxonomy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="BE_SkillAnalyzer" target="AI_Taxonomy">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="800" y="425" />
+          <mxPoint x="800" y="170" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+  </root>
+</mxGraphModel>

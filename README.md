@@ -55,13 +55,14 @@ cd backend
 cp .env.example .env         # configure DATABASE_URL
 pip install -r requirements.txt
 uvicorn agency_api:app --reload --port 8000
+# for me  python -m uvicorn agency_api:app --reload --port 8000
 ```
 
 API documentation is available at `http://localhost:8000/docs`.
 
 ### Frontend
 
-```bash
+```bash 
 cd frontend
 npm install
 npm run dev                  # development server at http://localhost:5173
